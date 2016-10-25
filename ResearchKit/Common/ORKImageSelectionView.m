@@ -68,6 +68,11 @@
         _button.imageView.contentMode = UIViewContentModeScaleAspectFit;
         
         [self addSubview:_button];
+        
+               
+        
+        
+        
         ORKEnableAutoLayoutForViews(@[_button, _button.imageView]);
         [self setUpConstraints];
         
@@ -137,6 +142,8 @@ static const CGFloat SpacerWidth = 10.0;
     NSArray *_buttonViews;
     ORKImageChoiceLabel *_choiceLabel;
     ORKImageChoiceLabel *_placeHolderLabel;
+    UIButton *_noPrefButton;
+    UILabel *_noPrefLabel;
 }
 
 - (ORKImageChoiceLabel *)makeLabel {
@@ -187,6 +194,30 @@ static const CGFloat SpacerWidth = 10.0;
             label.isAccessibilityElement = NO;
         }
         
+         //----------
+        
+        _noPrefButton = [UIButton buttonWithType:UIButtonTypeCustom];
+        _noPrefButton.exclusiveTouch = YES;
+      //  [_noPrefButton setTitle:@"No Preference" forState:UIControlStateNormal];
+     //   [_noPrefButton setTitleColor:[UIColor blackColor] forState:UIControlStateSelected];
+        [_noPrefButton setImage:[UIImage imageNamed:@"no_preference.png" ] forState:UIControlStateNormal];
+        [_noPrefButton setImage:[UIImage imageNamed:@"no_preference_selected.png" ] forState:UIControlStateSelected];
+       [_noPrefButton addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside]; 
+       [self addSubview:_noPrefButton];
+        
+        ORKEnableAutoLayoutForViews(@[_noPrefButton]);
+        
+        _noPrefLabel = [[UILabel alloc] init];
+        [_noPrefLabel setText:@"(equally good or equally bad)"];
+        [_noPrefLabel setTextColor:[UIColor grayColor]];
+        [_noPrefLabel setTextAlignment:NSTextAlignmentCenter];
+        [_noPrefLabel setFont:[UIFont italicSystemFontOfSize:12]];
+        [self addSubview:_noPrefLabel];
+        ORKEnableAutoLayoutForViews(@[_noPrefLabel]);
+
+        //-----------
+
+        
         ORKEnableAutoLayoutForViews(@[_placeHolderLabel, _choiceLabel]);
         ORKEnableAutoLayoutForViews(_buttonViews);
         [self setUpConstraints];
@@ -202,6 +233,18 @@ static const CGFloat SpacerWidth = 10.0;
                                              options:NSLayoutFormatDirectionLeadingToTrailing
                                              metrics:nil
                                                views:@{@"_choiceLabel": _choiceLabel}]];
+                                               
+    [constraints addObjectsFromArray:
+     [NSLayoutConstraint constraintsWithVisualFormat:@"H:|-[_noPrefButton]-|"
+                                             options:NSLayoutFormatDirectionLeadingToTrailing
+                                             metrics:nil
+                                               views:@{@"_noPrefButton": _noPrefButton}]];
+    [constraints addObjectsFromArray:
+     [NSLayoutConstraint constraintsWithVisualFormat:@"H:|-[_noPrefLabel]-|"
+                                             options:NSLayoutFormatDirectionLeadingToTrailing
+                                             metrics:nil
+                                               views:@{@"_noPrefLabel": _noPrefLabel}]];
+
     [constraints addObjectsFromArray:
      [NSLayoutConstraint constraintsWithVisualFormat:@"H:|-[_placeHolderLabel]-|"
                                              options:NSLayoutFormatDirectionLeadingToTrailing
@@ -217,10 +260,10 @@ static const CGFloat SpacerWidth = 10.0;
 
     ORKChoiceButtonView *previousView = nil;
     for (ORKChoiceButtonView *buttonView in _buttonViews) {
-        NSDictionary *views = NSDictionaryOfVariableBindings(buttonView, _choiceLabel);
+        NSDictionary *views = NSDictionaryOfVariableBindings(buttonView, _choiceLabel,_noPrefButton,_noPrefLabel);
         
         [constraints addObjectsFromArray:
-         [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[buttonView]-30-[_choiceLabel]-|"
+         [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[buttonView]-15-[_noPrefButton]-[_noPrefLabel]-30-[_choiceLabel]|"
                                                  options:NSLayoutFormatDirectionLeadingToTrailing
                                                  metrics:nil
                                                    views:views]];
@@ -302,21 +345,52 @@ static const CGFloat SpacerWidth = 10.0;
              if (buttonView.button != button) {
                  buttonView.button.selected = NO;
              } else {
-                 [self setLabelText:buttonView.labelText];
+                 //[self setLabelText:buttonView.labelText];
+                 // set label text display under image buttons, e.g. the seleted item label
              }
              
          }];
+         
         
     } else {
         [self resetLabelText];
     }
     
-    _answer = [_helper answerForSelectedIndexes:[self selectedIndexes]];
+    
+    
+   // _answer = [_helper answerForSelectedIndexes:[self selectedIndexes]];
+    
+    if (button == _noPrefButton) {
+    
+#define kNoPreferenceAnswer @[@(-1)]
+
+        [self setLabelText:@"No Preference"];
+        NSString *no_pref_answer = [NSString stringWithFormat:@"%@=%@",_choiceLabel.textArray[0],_choiceLabel.textArray[1]];
+
+        _answer = [NSArray arrayWithObject:no_pref_answer];
+    }
+    else {
+        _noPrefButton.selected = NO;
+        
+        NSInteger more_pref_index = [[[self selectedIndexes] firstObject] integerValue];
+        NSInteger less_pref_index = [[[self unselectedIndexes] firstObject]  integerValue];
+        NSString *pref_answer = [NSString stringWithFormat:@"%@>%@",_choiceLabel.textArray[more_pref_index],_choiceLabel.textArray[less_pref_index]];
+        
+        [self setLabelText:pref_answer];
+        
+         _answer = [NSArray arrayWithObject:pref_answer];
+        
+       // _answer = [_helper answerForSelectedIndexes:[self selectedIndexes]];
+
+    }
+
     
     if ([_delegate respondsToSelector:@selector(selectionViewSelectionDidChange:)]) {
         [_delegate selectionViewSelectionDidChange:self];
     }
-}
+    
+    }
+
 
 - (NSArray *)selectedIndexes {
     NSMutableArray *array = [NSMutableArray new];
@@ -324,6 +398,19 @@ static const CGFloat SpacerWidth = 10.0;
     [_buttonViews enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
          ORKChoiceButtonView *buttonView = obj;
          if (buttonView.button.selected)
+         {
+             [array addObject:@(idx)];
+         }
+     }];
+    
+    return [array copy];
+}
+- (NSArray *)unselectedIndexes {
+    NSMutableArray *array = [NSMutableArray new];
+    
+    [_buttonViews enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+         ORKChoiceButtonView *buttonView = obj;
+         if (!buttonView.button.selected)
          {
              [array addObject:@(idx)];
          }
