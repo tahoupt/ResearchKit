@@ -7,6 +7,7 @@
 //
 
 #import "LMSScaleLabel.h"
+#import "ORKHelpers_Internal.h"
 
 @implementation LMSScaleLabel
 
@@ -26,7 +27,7 @@
     
         self.text  = text;
         self.axisRelativePosition =x;
-    
+        [self setFont:ORKMediumFontWithSize(12)];
     }
     
     return self;
