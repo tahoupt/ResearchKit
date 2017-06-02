@@ -166,6 +166,12 @@ typedef NS_ENUM(NSInteger, ORKQuestionSection) {
             _headerView = _tableContainer.stepHeaderView;
             _headerView.captionLabel.useSurveyMode = self.step.useSurveyMode;
             _headerView.captionLabel.text = self.questionStep.title;
+            
+            // TAH modification
+            // if text is too big, then shrink its font size
+            // maybe put in a global variable to see if shrink-to-fit should be applied
+ //           [_headerView.captionLabel setFont:ORKLightFontWithSize(17)];
+            
             _headerView.instructionLabel.text = self.questionStep.text;
             _headerView.learnMoreButtonItem = self.learnMoreButtonItem;
             
@@ -232,12 +238,25 @@ typedef NS_ENUM(NSInteger, ORKQuestionSection) {
             }
             [NSLayoutConstraint activateConstraints:constraints];
         }
+        
+            // TAH modification
+            // if text is too big, then shrink its font size
+            // maybe put in a global variable to see if shrink-to-fit should be applied
+//            [_headerView.captionLabel setFont:ORKLightFontWithSize(17)];
+//            _tableContainer.stepHeaderView.captionLabel.font=ORKLightFontWithSize(17);
+
+ 
+ 
     }
     
     if ([self allowContinue] == NO) {
         self.continueButtonItem  = self.internalContinueButtonItem;
     }
     
+    // TAH modification
+    // if text is too big, then shrink its font size
+    // maybe put in a global variable to see if shrink-to-fit should be applied
+ //   _tableContainer.stepHeaderView.captionLabel.font=ORKLightFontWithSize(17);
 }
 
 - (void)viewDidLoad {
@@ -717,11 +736,15 @@ typedef NS_ENUM(NSInteger, ORKQuestionSection) {
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
     CGFloat height = [ORKSurveyAnswerCell suggestedCellHeightForView:tableView];
     
+
+    
     switch (self.questionStep.questionType) {
         case ORKQuestionTypeSingleChoice:
         case ORKQuestionTypeMultipleChoice:{
             if ([self.questionStep isFormatFitsChoiceCells]) {
                 height = [self heightForChoiceItemOptionAtIndex:indexPath.row];
+                    // modified by TAH
+                height *= 0.75;
             } else {
                 height = [ORKSurveyAnswerCellForPicker suggestedCellHeightForView:tableView];
             }

@@ -27,13 +27,22 @@
     
         self.text  = text;
         self.axisRelativePosition =x;
-        [self setFont:ORKMediumFontWithSize(12)];
+        [self setFont:ORKMediumFontWithSize(kLMSScaleLabelFontSize)];
     }
     
     return self;
 
 
 }
+
+
++ (UIFont *)defaultFont {
+    UIFontDescriptor *descriptor = [UIFontDescriptor preferredFontDescriptorWithTextStyle:UIFontTextStyleHeadline];
+   //  return [UIFont systemFontOfSize:[[descriptor objectForKey: UIFontDescriptorSizeAttribute] doubleValue]];
+    
+    return [UIFont systemFontOfSize:kLMSScaleLabelFontSize];
+}
+
         
 
 @end

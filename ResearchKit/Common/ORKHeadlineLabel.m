@@ -44,6 +44,13 @@
     CGFloat fontSize = [[descriptor objectForKey: UIFontDescriptorSizeAttribute] doubleValue] - defaultHeadlineSize + ORKGetMetricForWindow(surveyMode ? ORKScreenMetricFontSizeSurveyHeadline : ORKScreenMetricFontSizeHeadline, nil);
     CGFloat maxFontSize = ORKGetMetricForWindow(surveyMode ? ORKScreenMetricMaxFontSizeSurveyHeadline : ORKScreenMetricMaxFontSizeHeadline, nil);
     
+    
+    // TAH modification
+//    if (surveyMode ) {
+//       NSLog(@"headline label: %@", self);
+//       return ORKLightFontWithSize(defaultHeadlineSize);
+//
+//    }
     return ORKLightFontWithSize(MIN(maxFontSize, fontSize));
 }
 
@@ -52,7 +59,25 @@
 }
 
 - (UIFont *)defaultFont {
-    return [[self class] defaultFontInSurveyMode:_useSurveyMode];
+
+    UIFont *df = [[self class] defaultFontInSurveyMode:_useSurveyMode];
+    
+    // TAH modification -- to force rescaling if survey title is too long
+    #define kTitleMaxLength 150
+    if (_useSurveyMode) {
+         CGFloat scaleFactor = 0.75;
+        if ([self.text length] > kTitleMaxLength) {
+            scaleFactor = (CGFloat)kTitleMaxLength / (CGFloat)[self.text length];
+        }
+        CGFloat newSize = df.pointSize * scaleFactor;
+        df = [df fontWithSize:newSize];
+
+    }
+
+    return df;
+
+   //  original:
+   //  return [[self class] defaultFontInSurveyMode:_useSurveyMode];
 }
 
 - (void)setUseSurveyMode:(BOOL)useSurveyMode {
@@ -62,7 +87,15 @@
 
 // Nasty override (hack)
 - (void)updateAppearance {
+    // TAH modification -- updateAppearance overrides any resetting of font
+    // eg of  QuestionStepViewController.headerView.captionLabel
+    // in stepDidChange
+    
+
+    
     self.font = [self defaultFont];
+    
+    
     [self invalidateIntrinsicContentSize];
 }
 

@@ -1853,9 +1853,9 @@
 			children = (
 				86AD91121AB7B97E00361FEB /* ORKQuestionStepView.h */,
 				86AD91131AB7B97E00361FEB /* ORKQuestionStepView.m */,
+				86C40BC51A8D7C5C00081FAC /* ORKSurveyAnswerCellForImageSelection.h */,
 				86C40BC21A8D7C5C00081FAC /* ORKSurveyAnswerCell.h */,
 				866F86001A96CBF3007B282C /* ORKSurveyAnswerCell.m */,
-				86C40BC51A8D7C5C00081FAC /* ORKSurveyAnswerCellForImageSelection.h */,
 				86C40BC61A8D7C5C00081FAC /* ORKSurveyAnswerCellForImageSelection.m */,
 				86C40BC71A8D7C5C00081FAC /* ORKSurveyAnswerCellForNumber.h */,
 				86C40BC81A8D7C5C00081FAC /* ORKSurveyAnswerCellForNumber.m */,

@@ -8,6 +8,9 @@
 
 #import "ORKScaleRangeDescriptionLabel.h"
 
+
+#define kLMSScaleLabelFontSize 14
+
 @interface LMSScaleLabel : ORKScaleRangeDescriptionLabel 
 // ultimately descended from UILabel
 

@@ -137,7 +137,8 @@
 
 - (CGFloat)pickerView:(UIPickerView *)pickerView rowHeightForComponent:(NSInteger)component {
     assert(pickerView == _tempPicker);
-    return 32;
+    // return 32;
+    return 24; // added by TAH
 }
 
 @end

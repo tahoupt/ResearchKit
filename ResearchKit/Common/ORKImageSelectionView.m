@@ -29,32 +29,49 @@
  */
 
 
+/*
+
+Behavioral Cybernetics 2016 T. Houpt
+Heavily modified to allow forced 2 choice preference test...
+
+
+*/
+
 #import "ORKImageSelectionView.h"
 
 #import "ORKImageChoiceLabel.h"
 
 #import "ORKChoiceAnswerFormatHelper.h"
 
+#import "ORKBorderedButton.h"
+
 #import "ORKHelpers_Internal.h"
 #import "ORKSkin.h"
+
+//#import "/Users/houpt/Programming_Github/FoodQuest/FoodQuest/ImagePreferenceChoiceAnswerFormat.h"
 
 
 @interface ORKChoiceButtonView : UIView
 
-- (instancetype)initWithImageChoice:(ORKImageChoice *)choice;
+- (instancetype)initWithImageChoice:(ORKImageChoice *)choice andButtonLabelText:(NSString *)buttonLabelText;
 
 @property (nonatomic, strong) UIButton *button;
 @property (nonatomic, copy) NSString *labelText;
+
+// add a label view underneath
+@property (nonatomic, copy) NSString *buttonLabelText;
+@property (nonatomic, strong) UILabel *buttonLabelView;
 
 @end
 
 
 @implementation ORKChoiceButtonView
 
-- (instancetype)initWithImageChoice:(ORKImageChoice *)choice {
+- (instancetype)initWithImageChoice:(ORKImageChoice *)choice andButtonLabelText:(NSString *)buttonLabelText;{
     self = [super init];
     if (self) {
         _labelText = choice.text.length > 0 ? choice.text: @" ";
+        _buttonLabelText = buttonLabelText;
         
         self.button = [UIButton buttonWithType:UIButtonTypeCustom];
         _button.exclusiveTouch = YES;
@@ -69,11 +86,20 @@
         
         [self addSubview:_button];
         
-               
+           _buttonLabelView = [[UILabel alloc] init];
+            [_buttonLabelView setText:_buttonLabelText];
+            [_buttonLabelView setTextColor:[UIColor grayColor]];
+            _buttonLabelView.numberOfLines = 0;
+            _buttonLabelView.adjustsFontSizeToFitWidth = YES;
+            _buttonLabelView.minimumScaleFactor = 0.2;
+            [_buttonLabelView setTextAlignment:NSTextAlignmentCenter];
+            [_buttonLabelView setFont:[UIFont italicSystemFontOfSize:14]];
+        
+        [self addSubview:_buttonLabelView];
         
         
-        
-        ORKEnableAutoLayoutForViews(@[_button, _button.imageView]);
+        // add button labelview
+        ORKEnableAutoLayoutForViews(@[_button, _button.imageView, _buttonLabelView]);
         [self setUpConstraints];
         
         // Accessibility
@@ -90,12 +116,12 @@
 - (void)setUpConstraints {
     NSMutableArray *constraints = [NSMutableArray new];
     
-    NSDictionary *views = @{ @"button": _button };
+    NSDictionary *views = @{ @"button": _button ,@"buttonLabelView":_buttonLabelView};
     [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[button]|"
                                                                              options:NSLayoutFormatDirectionLeadingToTrailing
                                                                              metrics:nil
                                                                                views:views]];
-    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[button]|"
+    [constraints addObjectsFromArray:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[button]-5-[buttonLabelView]|"
                                                                              options:NSLayoutFormatDirectionLeadingToTrailing
                                                                              metrics:nil
                                                                                views:views]];
@@ -129,6 +155,14 @@
         ORK_Log_Warning(@"The size of imageChoice's normal image should not be zero. %@", image);
     }
     
+     [constraints addObject:[NSLayoutConstraint constraintWithItem:_buttonLabelView
+                                                            attribute:NSLayoutAttributeCenterX
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:self
+                                                            attribute:NSLayoutAttributeCenterX
+                                                           multiplier:1.0
+                                                             constant:0.0]];
+    
     [NSLayoutConstraint activateConstraints:constraints];
 }
 
@@ -140,10 +174,12 @@ static const CGFloat SpacerWidth = 10.0;
 @implementation ORKImageSelectionView {
     ORKChoiceAnswerFormatHelper *_helper;
     NSArray *_buttonViews;
+    NSArray *_imageIndexes;
     ORKImageChoiceLabel *_choiceLabel;
     ORKImageChoiceLabel *_placeHolderLabel;
     UIButton *_noPrefButton;
     UILabel *_noPrefLabel;
+    BOOL _showSelectedAnswer;
 }
 
 - (ORKImageChoiceLabel *)makeLabel {
@@ -175,33 +211,75 @@ static const CGFloat SpacerWidth = 10.0;
         NSMutableArray *buttonViews = [NSMutableArray new];
         NSMutableArray *labelTextArray = [NSMutableArray new];
         
+         BOOL showImageLabels = NO;
+        if ([answerFormat respondsToSelector:@selector(showImageLabels)]) {
+            showImageLabels = [answerFormat performSelector:@selector(showImageLabels)];
+        }
+
         NSArray *imageChoices = answerFormat.imageChoices;
         for (ORKImageChoice *imageChoice in imageChoices) {
+                    
+            NSString *buttonLabelText;
+            if (showImageLabels) {
+                buttonLabelText = [imageChoice.text copy];
+            }
+            else {
+                buttonLabelText  = @"";
+            }
+        
             if (imageChoice.text) {
                 [labelTextArray addObject:imageChoice.text];
             }
             
-            ORKChoiceButtonView *buttonView = [[ORKChoiceButtonView alloc] initWithImageChoice:imageChoice];
+            ORKChoiceButtonView *buttonView = [[ORKChoiceButtonView alloc] initWithImageChoice:imageChoice andButtonLabelText:buttonLabelText];
             [buttonView.button addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside];
             [buttonViews addObject:buttonView];
             [self addSubview:buttonView];
+            
+//            UILabel *buttonLabelView = [[UILabel alloc] init];
+//            if (imageChoice.text) {
+//                [buttonLabelView setText:imageChoice.text];
+//            }
+//            [buttonLabelView setTextColor:[UIColor grayColor]];
+//            [buttonLabelView setTextAlignment:NSTextAlignmentCenter];
+//            [buttonLabelView setFont:[UIFont italicSystemFontOfSize:12]];
+//            [buttonLabelViews addObject:buttonLabelView];
+//            [self addSubview:buttonLabelView];
+
+            
         }
         
         _choiceLabel.textArray = labelTextArray;
+        // make a copy of the image indexes for later use by answer
+        _imageIndexes = @[[[answerFormat.imageChoices firstObject] value],[[answerFormat.imageChoices objectAtIndex:1] value]];
         _buttonViews = buttonViews;
+       // _buttonLabelViews = buttonLabelViews;
+        
+        
+        
         
         for (UILabel *label in @[_choiceLabel, _placeHolderLabel]) {
             label.isAccessibilityElement = NO;
         }
         
-         //----------
+        //-------------------------------------------------------------------
         
-        _noPrefButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        _noPrefButton.exclusiveTouch = YES;
-      //  [_noPrefButton setTitle:@"No Preference" forState:UIControlStateNormal];
-     //   [_noPrefButton setTitleColor:[UIColor blackColor] forState:UIControlStateSelected];
-        [_noPrefButton setImage:[UIImage imageNamed:@"no_preference.png" ] forState:UIControlStateNormal];
-        [_noPrefButton setImage:[UIImage imageNamed:@"no_preference_selected.png" ] forState:UIControlStateSelected];
+// NOTE: added code for "no preference label"
+// so need to pass in a flag to turn button on or off...
+// because we don't want to explictly include a subclass, 
+// we'll just see if the answerFormat responds to the appropriate selectors
+
+
+            _noPrefButton = [ORKBorderedButton new];
+                    _noPrefButton.exclusiveTouch = YES;
+
+            [_noPrefButton setTitle:@"No Preference" forState:UIControlStateNormal];
+            _noPrefButton.contentEdgeInsets = (UIEdgeInsets){12, 12, 12, 12};
+
+            CGFloat x = (self.bounds.size.width - 200)/2;
+            [_noPrefButton setFrame:CGRectMake(x,0,200,50)];
+
+
        [_noPrefButton addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside]; 
        [self addSubview:_noPrefButton];
         
@@ -211,16 +289,33 @@ static const CGFloat SpacerWidth = 10.0;
         [_noPrefLabel setText:@"(equally good or equally bad)"];
         [_noPrefLabel setTextColor:[UIColor grayColor]];
         [_noPrefLabel setTextAlignment:NSTextAlignmentCenter];
+        
         [_noPrefLabel setFont:[UIFont italicSystemFontOfSize:12]];
+
+        if ([answerFormat respondsToSelector:@selector(allowNoPreference)]) {
+            _noPrefButton.hidden = ![answerFormat performSelector:@selector(allowNoPreference)];
+            _noPrefLabel.hidden = _noPrefButton.hidden;
+        }
+
+     
         [self addSubview:_noPrefLabel];
         ORKEnableAutoLayoutForViews(@[_noPrefLabel]);
 
-        //-----------
+        
+        
+        //-------------------------------------------------------------------
 
         
         ORKEnableAutoLayoutForViews(@[_placeHolderLabel, _choiceLabel]);
         ORKEnableAutoLayoutForViews(_buttonViews);
         [self setUpConstraints];
+        
+        
+        if ([answerFormat respondsToSelector:@selector(showSelectedAnswer)]) {
+            _showSelectedAnswer = [answerFormat performSelector:@selector(showSelectedAnswer)];
+        }
+
+
     }
     return self;
 }
@@ -234,11 +329,7 @@ static const CGFloat SpacerWidth = 10.0;
                                              metrics:nil
                                                views:@{@"_choiceLabel": _choiceLabel}]];
                                                
-    [constraints addObjectsFromArray:
-     [NSLayoutConstraint constraintsWithVisualFormat:@"H:|-[_noPrefButton]-|"
-                                             options:NSLayoutFormatDirectionLeadingToTrailing
-                                             metrics:nil
-                                               views:@{@"_noPrefButton": _noPrefButton}]];
+
     [constraints addObjectsFromArray:
      [NSLayoutConstraint constraintsWithVisualFormat:@"H:|-[_noPrefLabel]-|"
                                              options:NSLayoutFormatDirectionLeadingToTrailing
@@ -260,13 +351,17 @@ static const CGFloat SpacerWidth = 10.0;
 
     ORKChoiceButtonView *previousView = nil;
     for (ORKChoiceButtonView *buttonView in _buttonViews) {
-        NSDictionary *views = NSDictionaryOfVariableBindings(buttonView, _choiceLabel,_noPrefButton,_noPrefLabel);
+        
+   //     UILabel *button_label = [_buttonLabelViews objectAtIndex:[_buttonViews indexOfObject:buttonView]];
+        NSDictionary *views = NSDictionaryOfVariableBindings(buttonView,_choiceLabel,_noPrefButton,_noPrefLabel);
         
         [constraints addObjectsFromArray:
          [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[buttonView]-15-[_noPrefButton]-[_noPrefLabel]-30-[_choiceLabel]|"
                                                  options:NSLayoutFormatDirectionLeadingToTrailing
                                                  metrics:nil
                                                    views:views]];
+                                                   
+            
         
         if (previousView) {
             // ButtonView left trailing
@@ -298,6 +393,10 @@ static const CGFloat SpacerWidth = 10.0;
                                                                  constant:SpacerWidth]];
         }
         previousView = buttonView;
+    
+    
+    
+    
     }
     
     if (previousView) {
@@ -310,6 +409,19 @@ static const CGFloat SpacerWidth = 10.0;
                                                            multiplier:1.0
                                                              constant:-SpacerWidth]];
     }
+    
+
+
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:_noPrefButton
+                                                            attribute:NSLayoutAttributeCenterX
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:self
+                                                            attribute:NSLayoutAttributeCenterX
+                                                           multiplier:1.0
+                                                             constant:0]];    
+
+  
+      
     [NSLayoutConstraint activateConstraints:constraints];
 }
 
@@ -328,11 +440,24 @@ static const CGFloat SpacerWidth = 10.0;
 }
 
 - (void)setLabelText:(NSString *)text {
-    _choiceLabel.text = text;
-    _choiceLabel.textColor = [UIColor blackColor];
+
     
-    _choiceLabel.hidden = NO;
-    _placeHolderLabel.hidden = !_choiceLabel.hidden;
+    if (_showSelectedAnswer) {
+        // original code
+        _choiceLabel.text = text;
+        _choiceLabel.textColor = [UIColor blackColor];
+        
+        _choiceLabel.hidden = NO;
+        _placeHolderLabel.hidden = !_choiceLabel.hidden;
+
+    }
+    else {
+        // keep choice label hidden
+        _placeHolderLabel.hidden = NO;
+        _choiceLabel.hidden = !_placeHolderLabel.hidden;
+
+    
+    }
     
 }
 
@@ -345,8 +470,8 @@ static const CGFloat SpacerWidth = 10.0;
              if (buttonView.button != button) {
                  buttonView.button.selected = NO;
              } else {
-                 //[self setLabelText:buttonView.labelText];
-                 // set label text display under image buttons, e.g. the seleted item label
+                 [self setLabelText:buttonView.labelText];
+                 //set label text display under image buttons, e.g. the seleted item label
              }
              
          }];
@@ -372,10 +497,12 @@ static const CGFloat SpacerWidth = 10.0;
     else {
         _noPrefButton.selected = NO;
         
+        
         NSInteger more_pref_index = [[[self selectedIndexes] firstObject] integerValue];
         NSInteger less_pref_index = [[[self unselectedIndexes] firstObject]  integerValue];
-        NSString *pref_answer = [NSString stringWithFormat:@"%@>%@",_choiceLabel.textArray[more_pref_index],_choiceLabel.textArray[less_pref_index]];
-        
+      //  NSString *pref_answer = [NSString stringWithFormat:@"%@>%@",_choiceLabel.textArray[more_pref_index],_choiceLabel.textArray[less_pref_index]];
+        NSString *pref_answer = [NSString stringWithFormat:@"%@>%@",_imageIndexes[more_pref_index],_imageIndexes[less_pref_index]];
+
         [self setLabelText:pref_answer];
         
          _answer = [NSArray arrayWithObject:pref_answer];

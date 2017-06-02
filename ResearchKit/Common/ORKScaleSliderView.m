@@ -40,11 +40,13 @@
 #import "ORKScaleValueLabel.h"
 
 #import "ORKAnswerFormat_Internal.h"
+#import "ORKHelpers_Internal.h"
 
 #import "ORKSkin.h"
 #import "LMSScaleLabel.h"
 #import "FQScaleSlider.h"
-
+// NOTE: what is better way to include our custom classes
+#import "/Users/houpt/Programming_Github/FoodQuest/FoodQuest/ImageHedonicScaleAnswerFormat.h"
 
 //#define LAYOUT_DEBUG 1
 
@@ -66,8 +68,9 @@
     UIImageView *_imageView; // the image to be rated, once it has been opened from file
     NSString *_imageName; // a name of the image file, eg @"cheeseburger.png" ; should be in bundle
     NSString * _imageID; // an id for the image, e.g. index in foodpics database
+    NSString * _scaleType; // lms or natick
     NSString *_currentRatingText; // 
-
+   ORKScaleRangeDescriptionLabel *_imageLabel;
 
     /* END OF TEST */
 
@@ -80,23 +83,9 @@
         _formatProvider = formatProvider;
         _delegate = delegate;
         
-NSArray *LHS_scale = @[
-	@100.00,
-	@65.72,
-	@44.43,
-	@17.82,
-	@6.25,
-	@0.00,
-	@-5.92,
-	@-17.59,
-	@-41.58,
-	@-62.89,
-	@-100.00
-];
-
         
         _slider = [[FQScaleSlider alloc] initWithFrame:CGRectZero];
-        _slider.linearSteps = LHS_scale;
+        _slider.linearSteps = ((ImageHedonicScaleAnswerFormat *)(self.formatProvider)).scaleValues;
         _slider.userInteractionEnabled = YES;
         _slider.contentMode = UIViewContentModeRedraw;
         [self addSubview:_slider];
@@ -117,24 +106,27 @@ NSArray *LHS_scale = @[
         _slider.textChoices = textChoices;
         
         
-// NOTE: we're always vertical and set our own scale labels
-//        if (isVertical && textChoices) {
-//            // Generate an array of labels for all the text choices
-//            _textChoiceLabels = [NSMutableArray new];
-//            for (int i = 0; i <= numberOfSteps; i++) {
-//                ORKTextChoice *textChoice = textChoices[i];
-//                ORKScaleRangeLabel *stepLabel = [[ORKScaleRangeLabel alloc] initWithFrame:CGRectZero];
-//                stepLabel.text = textChoice.text;
-//                stepLabel.textAlignment = NSTextAlignmentLeft;
-//                stepLabel.translatesAutoresizingMaskIntoConstraints = NO;
-//                [self addSubview:stepLabel];
-//                [_textChoiceLabels addObject:stepLabel];
-//            }
-//        } else {
-        
+ // TAH: if Hedonic Scale, then we're always vertical and set our own scale labels
+ // Natick uses text choices
+ 
+        if (isVertical && textChoices) {
+            // Generate an array of labels for all the text choices
+            _textChoiceLabels = [NSMutableArray new];
+            for (int i = 0; i <= numberOfSteps; i++) {
+                ORKTextChoice *textChoice = textChoices[i];
+                ORKScaleRangeLabel *stepLabel = [[ORKScaleRangeLabel alloc] initWithFrame:CGRectZero];
+                stepLabel.text = textChoice.text;
+                stepLabel.textAlignment = NSTextAlignmentLeft;
+                stepLabel.translatesAutoresizingMaskIntoConstraints = NO;
+                [self addSubview:stepLabel];
+                [_textChoiceLabels addObject:stepLabel];
+            }
+        } 
+
+// else { // not text choices        
 
            
-// NOTE: don't nee left and rightRangeDescriptionLabels
+// TAH: don't need left and rightRangeDescriptionLabels
 //            _leftRangeDescriptionLabel = [[ORKScaleRangeDescriptionLabel alloc] initWithFrame:CGRectZero];
 //            _leftRangeDescriptionLabel.numberOfLines = -1;
 //            [self addSubview:_leftRangeDescriptionLabel];
@@ -180,18 +172,39 @@ NSArray *LHS_scale = @[
 
 
 
- //       }
+ //       } // not textChoices
         
         
 
 
 // add imageView
 
-        _imageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"cheeseburger.jpeg"]];
-        _imageID = @"0456";
+        NSInteger _imageIndex =((ImageHedonicScaleAnswerFormat *)(self.formatProvider)).imageIndex;
+        NSString * _extension =((ImageHedonicScaleAnswerFormat *)(self.formatProvider)).imageType;
+        _imageName = [NSString stringWithFormat:@"%ld.%@", (long)_imageIndex,_extension];
+        
+        _imageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:_imageName]];
+        _imageID = [NSString stringWithFormat:@"%ld", ((ImageHedonicScaleAnswerFormat *)(self.formatProvider)).imageIndex];
        [self addSubview:_imageView];
        _imageView.translatesAutoresizingMaskIntoConstraints = NO;
 
+// add image Label
+
+            _imageLabel = [[ORKScaleRangeDescriptionLabel alloc] initWithFrame:CGRectZero];
+            
+            _imageLabel.font = ORKMediumFontWithSize(12);
+            _imageLabel.numberOfLines = 0;
+            _imageLabel.adjustsFontSizeToFitWidth = YES;
+            _imageLabel.minimumScaleFactor = 0.2;
+            _imageLabel.textAlignment = NSTextAlignmentCenter;
+            if (((ImageHedonicScaleAnswerFormat *)(self.formatProvider)).showImageLabel) {
+                _imageLabel.text = ((ImageHedonicScaleAnswerFormat *)(self.formatProvider)).imageLabel;
+
+            }
+            else { _imageLabel.text = @""; }
+            [self addSubview:_imageLabel];
+            
+            _imageLabel.translatesAutoresizingMaskIntoConstraints = NO;
 
 
         self.translatesAutoresizingMaskIntoConstraints = NO;
@@ -200,39 +213,14 @@ NSArray *LHS_scale = @[
         
 // add scale labels
 
-        NSArray *LHS_labels = @[
+
+        NSArray *hedonicLabels = ((ImageHedonicScaleAnswerFormat *)(self.formatProvider)).scaleLabels;
+        NSArray *hedonicValues = ((ImageHedonicScaleAnswerFormat *)(self.formatProvider)).scaleValues;
         
-            @"Most Liked Imaginable",
-            @"Like Extremely",
-            @"Like Very Much",
-            @"Like Moderately",
-            @"Like Slightly",
-            @"Dislike Slightly",
-            @"Dislike Moderately",
-            @"Dislike Very Much",
-            @"Dislike Extremely",
-            @"Most Disliked Imaginable"
-
-        ];
-
-
-        NSArray *LHS_scale_s = @[
-            @100.00,
-            @65.72,
-            @44.43,
-            @17.82,
-            @6.25,
-            @-5.92,
-            @-17.59,
-            @-41.58,
-            @-62.89,
-            @-100.00
-        ];
-
         scaleLabels = [NSMutableArray array];
 
-        for (int i = 0; i< [LHS_labels count]; i++) {
-            LMSScaleLabel *scale_label = [[LMSScaleLabel alloc] initWithText:[LHS_labels objectAtIndex:i ] andPosition:  [[LHS_scale_s objectAtIndex:i ] floatValue]];
+        for (int i = 0; i< [hedonicLabels count]; i++) {
+            LMSScaleLabel *scale_label = [[LMSScaleLabel alloc] initWithText:[hedonicLabels objectAtIndex:i ] andPosition:  [[hedonicValues objectAtIndex:i ] floatValue]];
             scale_label.translatesAutoresizingMaskIntoConstraints = NO;
             [scaleLabels addObject: scale_label];
             [self addSubview:scale_label];
@@ -409,9 +397,40 @@ NSArray *LHS_scale = @[
                                                                 attribute:NSLayoutAttributeCenterY
                                                                multiplier:1.0
                                                                  constant:0.0]]; 
-                                                                 
-                                                                                                                     
-    
+               
+ // put image label centered, underneath imageView                                                
+[constraints addObject:[NSLayoutConstraint constraintWithItem:_imageLabel
+                                                                 attribute:NSLayoutAttributeCenterX
+                                                                 relatedBy:NSLayoutRelationEqual
+                                                                    toItem:_imageView
+                                                                 attribute:NSLayoutAttributeCenterX
+                                                                multiplier:1.0
+                                                                  constant:0]];  
+                                                                  
+    [constraints addObject:[NSLayoutConstraint constraintWithItem:_imageLabel
+                                                                 attribute:NSLayoutAttributeWidth
+                                                                 relatedBy:NSLayoutRelationEqual
+                                                                    toItem:_imageView
+                                                                 attribute:NSLayoutAttributeWidth
+                                                                multiplier:1.0
+                                                                  constant: 0]];
+                                                                  
+//      [constraints addObject:[NSLayoutConstraint constraintWithItem:_imageLabel
+//                                                                 attribute:NSLayoutAttributeHeight
+//                                                                 relatedBy:NSLayoutRelationEqual
+//                                                                    toItem:_imageView
+//                                                                 attribute:NSLayoutAttributeHeight
+//                                                                multiplier:2.0
+//                                                                  constant: 0]];                                                                      
+                                                                                                                                   
+ 
+         [constraints addObject:[NSLayoutConstraint constraintWithItem:_imageLabel
+                                                                 attribute:NSLayoutAttributeTop
+                                                                 relatedBy:NSLayoutRelationEqual
+                                                                    toItem:_imageView
+                                                                 attribute:NSLayoutAttributeBottom
+                                                                multiplier:1.0
+                                                                  constant: 10]];     
 
    // set the slider a little to the right of the midline
             [constraints addObject:[NSLayoutConstraint constraintWithItem:_slider
@@ -633,14 +652,25 @@ NSArray *LHS_scale = @[
     } else {
 
         
-        return _currentNumberValue;
+       //  return _currentNumberValue;
         
-        // NOTE: modified for hedonic scale to return @"<item_id>=<currentNumberValue>"
+        // NOTE: want to modify for hedonic scale to return @"<item_id>=<currentNumberValue>"
         // so should be moved to subclass
+        // only works if we can return a string
         
-//        _currentRatingText = [NSString stringWithFormat:@"%@=@ld",_imageID,[_currentNumberValue doubleValue]];
+        // NOTE: as a hack, encode imageID as imageID * 1000 + currentNumberValue
+        // currentNumberValue ranges from -100 to +100, so can put imageID in 1000s
+        // 
+         
+        double currentRating = [_currentNumberValue doubleValue];
         
- //       return _currentRatingText;
+        if (currentRating < 0.0) { 
+            currentRating = currentRating + (-1.0 * [_imageID doubleValue] * 1000.0); 
+        }
+        else { currentRating = currentRating + ([_imageID doubleValue] * 1000.0); }
+        
+        return [NSNumber numberWithDouble:currentRating];
+   
 
     }
 }
