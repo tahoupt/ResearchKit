@@ -490,7 +490,9 @@ static const CGFloat SpacerWidth = 10.0;
 #define kNoPreferenceAnswer @[@(-1)]
 
         [self setLabelText:@"No Preference"];
-        NSString *no_pref_answer = [NSString stringWithFormat:@"%@=%@",_choiceLabel.textArray[0],_choiceLabel.textArray[1]];
+        // choice label is image description (e.g. "cheeseburger", imageIndexes are image numbers (i.e. index into image array),e.g. "768"
+   //     NSString *no_pref_answer = [NSString stringWithFormat:@"%@=%@",_choiceLabel.textArray[0],_choiceLabel.textArray[1]];
+        NSString *no_pref_answer = [NSString stringWithFormat:@"%@=%@",_imageIndexes[0],_imageIndexes[1]];
 
         _answer = [NSArray arrayWithObject:no_pref_answer];
     }
