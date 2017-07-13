@@ -203,6 +203,20 @@
             }
         }
     }
+    
+    // TAH -- moved the appending of signatures outside of else block (so added even if _htmlReviewContent)
+    // TAH also removed the extraneous page break because it seems to get added to end of htmlReviewContent
+   if (!mobile) {
+        // page break
+        [body appendFormat:@"<h4>%@</h4>", _signaturePageTitle ? : @""];
+        [body appendFormat:@"<p>%@</p>", _signaturePageContent ? : @""];
+        
+        for (ORKConsentSignature *signature in self.signatures) {
+            [body appendFormat:@"%@", [_signatureFormatter HTMLForSignature:signature]];
+        }
+    }
+
+
     return [[self class] wrapHTMLBody:body mobile:mobile];
 }
 
