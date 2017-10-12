@@ -356,7 +356,7 @@ static const CGFloat SpacerWidth = 10.0;
         NSDictionary *views = NSDictionaryOfVariableBindings(buttonView,_choiceLabel,_noPrefButton,_noPrefLabel);
         
         [constraints addObjectsFromArray:
-         [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[buttonView]-15-[_noPrefButton]-[_noPrefLabel]-30-[_choiceLabel]|"
+         [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[buttonView(<=200)]-15-[_noPrefButton(<=48)]-[_noPrefLabel(<=30)]-30-[_choiceLabel(<=60)]-30@999-|"
                                                  options:NSLayoutFormatDirectionLeadingToTrailing
                                                  metrics:nil
                                                    views:views]];
